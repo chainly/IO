@@ -99,6 +99,10 @@ while True:
         conn, addr = sock.accept()
         data = conn.recv(1024)
         print(data)
+        # after client close, it will continue  send EMPTY(''),
+        # that means EMPTY data is treated as connect closed
+        #if not data:
+        #    conn.close()
         url,data = http_parse(data)
         """
         HTTP/1.1 200 OK
