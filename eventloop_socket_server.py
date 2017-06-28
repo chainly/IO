@@ -78,7 +78,7 @@ if not sock in fd_callback:
 while True:
     events = eloop.poll(timeout=5)
     if events:
-        print(events) # [(6,1)] 
+        print(repr(events)) # [(6,1)] 
         """
         event
         POLL_NULL = 0x00
@@ -87,6 +87,10 @@ while True:
         POLL_ERR = 0x08
         POLL_HUP = 0x10
         POLL_NVAL = 0x20
+        
+        *** events should treat as byte 0000 0000(00 NVAL HUP  ERR OUT 0 IN),
+        *** set 1 to be True
+        ***
         """
         # if evenets not be dealed, it repeats.
         for fp,event in events:
@@ -110,24 +114,37 @@ while True:
                 # we can't go predict it's fd,
                 # use {fd: callback} required
                 # [(8, 4)]
-                # data deal
-                if event == 4:
-                    print(fp, fd_callback[fp][1](10))
+                # select.POLLIN set
+                if event & select.POLLIN:
+                    pdata = fd_callback[fp][1](10) # include \r\n
+                    print(fp, pdata)
                     # (8, 'test\r\n')
-                    
+                    # for telnet
+                    # data end with '\r\n'
+                    # ctr self_define
+                    # close EOF with ''
+                    # close conn, else recive '' continuously even conn disappearred
+                    if pdata == '':
+                        fd_callback[fp][0].close()
+                        eloop.unregister(fp)                    
+                        fd_callback.pop(fp, None)            
+                        print(fp, event, 'closed')
                 # telnet quit Connection closed.
                 # tcp        0      0 127.0.0.1:34572         127.0.0.1:5555          FIN_WAIT2   -
                 # tcp        0      0 127.0.0.1:5555          127.0.0.1:34572         CLOSE_WAIT  13792/python
                 # 407302       0t0        TCP localhost:5555->localhost:34578 (CLOSE_WAIT)
                 # conn close deal
                 # [(8, 5)]
-                elif event == 5:
+                #elif event == 5:
+                # select.POLLIN done and select.POLLOUT wanted
+                elif event & select.POLLOUT:
+                    print(fp, event, 'write') 
+                    time.sleep(3)
+                else:
                     # close conn, else no FIN reply
                     fd_callback[fp][0].close()
                     eloop.unregister(fp)                    
                     fd_callback.pop(fp, None)
-                    print(fp, event, 'poped')
-                else:
                     print(fp, event, 'unknow')
 
     else:
