@@ -2,7 +2,11 @@
 
 # https://docs.python.org/2/library/socket.html?highlight=socket#module-socket
 import socket
-socket.setdefaulttimeout(100)
+
+# blocking, non-blocking, or timeout
+# socket.setblocking(True) a shorthand for this
+# https://docs.python.org/3/library/socket.html#notes-on-socket-timeouts
+socket.setdefaulttimeout(None)
 print(socket.getdefaulttimeout())
 """
 socket.getaddrinfo('baidu.com',80)
@@ -28,7 +32,7 @@ sock = socket.socket(family = socket.AF_INET, # AF_UNIX(socket file), AF_INET(ip
                      )
 # server close firstly and in timewait
 # set is so that when we cancel out we can reuse port
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind(('',5555))
 # python    8372                 cool    6u     sock                0,8       0t0     199688 protocol: TCP
 fd = sock.fileno() # 6
