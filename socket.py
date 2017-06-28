@@ -38,3 +38,5 @@ sock.bind(('',5555))
 fd = sock.fileno() # 6
 sock.listen(5) # backlog
 # python    8372                 cool    6u     IPv4             199688       0t0        TCP *:5555 (LISTEN)
+print(sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE)) # 0
+time.sleep(20)
