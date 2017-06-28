@@ -37,11 +37,11 @@ sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # set keepalive
 # ref: https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-# the interval of inactivity to start send KEEPALIVE(default to 14400)
+# the interval of inactivity to start send KEEPALIVE(berkeley 14400)
 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 30)
-# the interval to send next if previous KEEPALIVE timeout
-sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval_sec)
-# the num of KEEPALIVE to send before mark it failed
+# the interval to send next if previous KEEPALIVE timeout(berkeley 75)
+sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 5)
+# the num of KEEPALIVE to send before mark it failed(berkeley 8)
 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
 
 sock.bind(('',5555))
@@ -49,7 +49,7 @@ sock.bind(('',5555))
 fd = sock.fileno() # 6
 sock.listen(5) # backlog
 # python    8372                 cool    6u     IPv4             199688       0t0        TCP *:5555 (LISTEN)
-print(sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE)) # 0
-time.sleep(20)
+print(sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE)) # 1
+time.sleep(120)
 
 
