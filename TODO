@@ -1,0 +1,9 @@
+- get to know where , what or how to do with keepalive
+- [DONE]what Future do, seem to just thread_pool
+  http://xiaorui.cc/2014/11/15/%E4%BD%BF%E7%94%A8python%E7%9A%84%E4%B8%8A%E5%B1%82%E5%B0%81%E8%A3%85%E5%B9%B6%E5%8F%91%E5%BA%93concurrent-futures%E5%AE%9E%E7%8E%B0%E5%BC%82%E6%AD%A5/
+- what do async/await do
+- [DONE,maybe]how to connect concurrent.futures do with tornado.ioloop
+  ioloop register(socket, server.conn_deal| conn, read|write_deal)
+         send (fd, event, callback) to Future
+  future apply_async(fd.callback, [callback_done|callback(callback_done)] ) to pool
+ 
