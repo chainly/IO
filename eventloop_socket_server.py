@@ -140,6 +140,14 @@ while True:
                 elif event & select.POLLOUT:
                     print(fp, event, 'write') 
                     time.sleep(3)
+                # I can't comfirm it before writing a client
+                # ref: http://scotdoyle.com/python-epoll-howto.html
+                elif event & select.EPOLLHUP:
+                    # close conn, else no FIN reply
+                    fd_callback[fp][0].close()
+                    eloop.unregister(fp)                    
+                    fd_callback.pop(fp, None)
+                    print(fp, event, 'EPOLLHUP')
                 else:
                     # close conn, else no FIN reply
                     fd_callback[fp][0].close()
