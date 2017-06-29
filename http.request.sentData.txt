@@ -1,0 +1,58 @@
+for urllib http request
+
+- urlopen(url) 
+	- opener = build_opener()
+		- opener = OpenerDirector()
+		- opener.add_handler(klass()) # handler = HTTPHandler
+			- protocol = http  # http_request
+			- condition = request # http_request
+			- elif condition == "request":
+				- kind = protocol
+                - lookup = self.process_request
+                - handlers = lookup.setdefault(kind, []) 
+                - handlers.append(handler) # self.process_request.add( (http,[HTTPHandler,])) lazy_quote
+                - bisect.insort(self.handlers, handler)
+                - handler.add_parent(self)
+            - elif condition == "open":
+			    - # self.handle_open.add( (http,[HTTPHandler,])) lazy_quote
+			- elif condition == "response":
+				- # self.process_response.add( (http,[HTTPHandler,])) lazy_quote
+		- return OpenerDirector
+	- return opener.open(url, data, timeout)
+		- OpenerDirector.open(url, data, timeout)
+			- req = Request(fullurl, data)
+			- protocol = req.get_type() # http
+			- meth_name = protocol+"_request" # http_request
+			- req = meth(req) 
+				- req = HTTPHandler.http_request(req)
+					- req = AbstractHTTPHandler.do_request_(self, request)
+						- return request
+			- response = self._open(req, data)
+				- result = self._call_chain(self.handle_open, 'default','default_open', req) # ()
+				- result = self._call_chain(self.handle_open, protocol, protocol + '_open', req) # http_open
+					- _call_chain(self, chain, kind, meth_name, *args):
+						- handlers = chain.get(kind, ()) # [HTTPHandler]
+						- func = getattr(handler, meth_name) # result = HTTPHandler.http_open(req)
+							- AbstractHTTPHandler.do_open(httplib.HTTPConnection, req)
+								- do_open(self, http_class, req, **http_conn_args)
+									- h = http_class(host, timeout=req.timeout, **http_conn_args)
+										- h = httplib.HTTPConnection
+								- 			- socket.create_connection
+							- h.request(req.get_method(), req.get_selector(), req.data, headers)
+								- httplib.HTTPConnection.request(self, method, url, body=None, headers={})
+									- self._send_request(method, url, body, headers)
+										- self._send_request(method, url, body, headers)
+											- self.putrequest(method, url, **skips)
+												- self.putheader
+													- self._output
+														- self._buffer.append(s)
+									- self.endheaders(body)
+										- self._send_output(message_body)
+											- msg = "\r\n".join(self._buffer)
+											- self.send(msg)
+											- self.send(message_body)
+												- self.connect()
+												- self.sock.sendall(data)
+						- return result
+			- response = meth(req, response) # HTTPHandler.http_response # ()
+			- return response 
