@@ -1,5 +1,5 @@
 #coding: utf-8
-
+import time
 # https://docs.python.org/2/library/socket.html?highlight=socket#module-socket
 import socket
 
@@ -30,8 +30,18 @@ sock = socket.socket(family = socket.AF_INET, # AF_UNIX(socket file), AF_INET(ip
                                                 # SOCK_RAW(raw), ...;
                                                 # proto =  usually zero
                      )
+
 # server close firstly and in timewait
 # set is so that when we cancel out we can reuse port
+# And slove this problem
+# tcp        0      0 127.0.0.1:5555          127.0.0.1:40446         TIME_WAIT   -   
+# This will raise 
+# socket.error: [Errno 98] Address already in use
+# conn.close() before sock.close()
+# time_wait
+# vi /etc/sysctl.conf 
+# net.ipv4.tcp_tw_recycle = 1 
+# /sbin/sysctl -p
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # set keepalive
@@ -52,4 +62,8 @@ sock.listen(5) # backlog
 print(sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE)) # 1
 time.sleep(120)
 
+# telnet 127.0.0.1 5555
+# Connected to 127.0.0.1.
+# telnet    8444                 cool    3u     IPv4             202973       0t0        TCP localhost:33728->localhost:5555 (ESTABLISHED)
 
+# ref: https://github.com/chainly/shadowsocks/blob/master/shadowsocks/eventloop.py#L193-L223
