@@ -9,3 +9,8 @@
 - `netstat -ontp` to monitor keep_alive
   tcp        0      0 127.0.0.1:5555          127.0.0.1:42204         ESTABLISHED 3002/python          保持连接 (2.36/0/0)
 - ssl, https
+- HTTP_HEADER
+  - Content-Encoding
+  - Content-Length
+  - Transfer-Encoding
+  
