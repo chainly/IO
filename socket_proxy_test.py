@@ -69,6 +69,17 @@ print(sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE)) # 1
 
 import urllib2, urlparse, re
 
+def headers_parse(data):
+    data,rest = data.split('\r\n\r\n',1)
+    data_lines = data.split('\r\n')
+    action, url_path, ver = data_lines[0].split(None,2)    
+    headers = {}
+    [ headers.setdefault(*[ i.strip() for i in item.split(':',1)]) for item in data_lines[1:] ] 
+    return action, url_path, ver, headers, rest
+def headers_unparse(action, url_path, ver, headers, rest):
+    data = '%s %s %s\r\n' % (action, url_path, ver) + \
+        '\r\n'.join([ '%s: %s'%(k, headers[k]) for k in headers]) + '\r\n\r\n' + rest 
+    return data
 def parse_request(conn):
     # see httplib.HTTPConnection.request
     # when should we treat Http request is header/done
@@ -87,18 +98,67 @@ def parse_request(conn):
         else:
             break
     # Content-Length
-    action, url_path, ver, headers = headers_parse(data)
+    action, url_path, ver, headers, rest_readed = headers_parse(data)
     if 'Content-Length' in headers:
-        rest = int(headers["Content-Length"])
-        buf = conn.recv(rest)
+        rest_length = int(headers["Content-Length"]) - len(rest_readed)
+        buf = conn.recv(rest_length)
         data += buf
+    #'Transfer-Encoding: chunked'
+    if 'Transfer-Encoding' in headers and headers["Transfer-Encoding"] == 'chunked':
+        #rest_data = '\r\n\r\n' 
+        rest_data = ''
+        # header, rest_data
+        #data, rest_readed = data.split('\r\n\r\n',1)
+        #data += '\r\n\r\n' 
+        while True:
+            # '\r\n' required
+            if not '\r\n' in rest_readed:
+                buf = conn.recv(1)
+                if buf:
+                    rest_readed += buf
+                    continue
+                else:
+                    raise socket.error('READ INTERRUPTTED')
+            rest_read_need_str, rest_readed = rest_readed.split('\r\n',1)
+            print(rest_read_need_str, rest_readed)
+            # binascii
+            # int('4a0',16)
+            rest_read_need_int = int(rest_read_need_str, 16)
+            # 0\r\n\r\n done
+            if rest_read_need_int == 0:
+                # the last \r\n
+                last_end_2 = conn.recv(2)
+                assert last_end_2 == '\r\n', 'BAD_EOF'
+                # Content-Encoding: gzip  # gzip,deflate,compress
+                # http://guojuanjun.blog.51cto.com/277646/667067
+                # https://stackoverflow.com/a/8506931/6493535 # zlib
+                # python3 # gzip.decompress(str)
+                # https://stackoverflow.com/a/2695575/6493535
+                # all
+                if 'Content-Encoding' in headers and headers["Content-Encoding"] == 'gzip':
+                    import zlib
+                    rest_data = zlib.decompress(rest_data, 16+zlib.MAX_WBITS)
+                    rest_data_length = len(rest_data)
+                    headers.pop('Content-Encoding',None)
+                # ERR_INVALID_CHUNKED_ENCODING
+                headers.pop('Transfer-Encoding',None)
+                headers["Content-Length"] = rest_data_length
+                data = headers_unparse(action, url_path, ver, headers, rest_data)
+                break
+            if len(rest_readed) >= rest_read_need_int:
+                rest_data += rest_readed[:rest_read_need_int]
+                rest_readed = rest_readed[rest_read_need_int:] 
+                continue
+            else:
+                # '\r\n'
+                rest_read_required = rest_read_need_int - len(rest_readed) + 2
+                buf = conn.recv(rest_read_required)
+                assert buf != rest_read_required, 'DATA_NOT_ENOUGH'
+                rest_data += buf[:-2]
+                rest_readed = ''
+                continue
+
     return data
-def headers_parse(data):
-    data_lines = data.split('\r\n')
-    action, url_path, ver = data_lines[0].split(None,2)    
-    headers = {}
-    [ headers.setdefault(*[ i.strip() for i in item.split(':',1)]) for item in data_lines[1:-2] ] 
-    return action, url_path, ver, headers
 def http_parse(data):
     """
     GET /http://www.qq.com/ HTTP/1.1
@@ -117,7 +177,7 @@ def http_parse(data):
     """
     global WEB
     
-    action, url_path, ver, headers = headers_parse(data)
+    action, url_path, ver, headers, rest_readed = headers_parse(data)
     url = url_path.lstrip('/')
     pres = urlparse.urlparse(url)
     if pres.scheme:
