@@ -86,8 +86,9 @@ def parse_request(conn):
     # header xx/r/n...../r/n
     # /r/n
     # data lenght{} = header['content-length']
+    # \r\nhex\r\nlen(data)=hex for Transfer-Encoding
     
-    # find /r/n/r/n
+    # find \r\n\r\n
     data = ''
     while True:
         buf = conn.recv(10)
@@ -101,34 +102,61 @@ def parse_request(conn):
     action, url_path, ver, headers, rest_readed = headers_parse(data)
     if 'Content-Length' in headers:
         rest_length = int(headers["Content-Length"]) - len(rest_readed)
-        buf = conn.recv(rest_length)
-        data += buf
+        while rest_length >0 :
+            buf = conn.recv(rest_length)
+            if buf:
+                data += buf
+                rest_length = rest_length - len(buf)
+            else:
+                raise StopIteration('rest_length remains')
     #'Transfer-Encoding: chunked'
-    if 'Transfer-Encoding' in headers and headers["Transfer-Encoding"] == 'chunked':
-        #rest_data = '\r\n\r\n' 
+    elif 'Transfer-Encoding' in headers and headers["Transfer-Encoding"] == 'chunked':
         rest_data = ''
-        # header, rest_data
-        #data, rest_readed = data.split('\r\n\r\n',1)
-        #data += '\r\n\r\n' 
+        rest_read_required = 0
         while True:
             # '\r\n' required
             if not '\r\n' in rest_readed:
-                buf = conn.recv(1)
+                buf = conn.recv(1024)
                 if buf:
+                    #print(repr(buf))                    
                     rest_readed += buf
                     continue
                 else:
                     raise socket.error('READ INTERRUPTTED')
+            if rest_read_required > 0:
+                rest_data += rest_readed[:rest_read_required]
+                rest_readed_tmp = rest_readed[rest_read_required:]
+                # still require to read
+                if rest_readed_tmp == '':
+                    rest_read_required -= len(rest_readed)
+                else:
+                    rest_read_required = 0
+                # remove '\r\n'
+                if rest_read_required == 0:
+                    rest_data = rest_data[:-2]
+                rest_readed = rest_readed_tmp
+                continue
+
             rest_read_need_str, rest_readed = rest_readed.split('\r\n',1)
-            print(rest_read_need_str, rest_readed)
+            #print(rest_read_need_str, rest_readed)
             # binascii
             # int('4a0',16)
-            rest_read_need_int = int(rest_read_need_str, 16)
-            # 0\r\n\r\n done
-            if rest_read_need_int == 0:
+            # \r\nhex【\r\n(split)】len(data)=hex【\r\n】0\r\n\r\n
+            rest_read_required = int(rest_read_need_str, 16) + 2
+            # 0\r\n\r\n done 0\r\n\
+            if rest_read_required == 2:
                 # the last \r\n
-                last_end_2 = conn.recv(2)
-                assert last_end_2 == '\r\n', 'BAD_EOF'
+                last_end_len = 2 - len(rest_readed)
+                assert last_end_len >= 0 , 'EXCEEDED_EOF:%s'%last_end_len                
+                if last_end_len > 0:
+                    last_end = conn.recv(last_end_len)
+                    assert len(last_end) == last_end_len , 'BAD_EOF:%s'%last_end
+                """
+                \xff\r\n\x03\x00\xba\xdf\xb2\xb2\xe9(\x00\x00
+                \xff\r\na\r\n\x03\x00\xba\xdf\xb2\xb2\xe9(\x00\x00\r\n0\r\n\r\n
+                \xff\r\n\x03\x00\xba\xdf\xb2\xb2\xe9(\x00\x00\r\n
+                """                
+                rest_data = rest_data
                 # Content-Encoding: gzip  # gzip,deflate,compress
                 # http://guojuanjun.blog.51cto.com/277646/667067
                 # https://stackoverflow.com/a/8506931/6493535 # zlib
@@ -136,29 +164,33 @@ def parse_request(conn):
                 # https://stackoverflow.com/a/2695575/6493535
                 # all
                 if 'Content-Encoding' in headers and headers["Content-Encoding"] == 'gzip':
+                    #print(repr(rest_data))
                     import zlib
                     rest_data = zlib.decompress(rest_data, 16+zlib.MAX_WBITS)
                     rest_data_length = len(rest_data)
                     headers.pop('Content-Encoding',None)
                 # ERR_INVALID_CHUNKED_ENCODING
                 headers.pop('Transfer-Encoding',None)
-                headers["Content-Length"] = rest_data_length
+                #headers["Content-Length"] = rest_data_length
+                headers["Content-Length"] = len(rest_data)
                 data = headers_unparse(action, url_path, ver, headers, rest_data)
                 break
-            if len(rest_readed) >= rest_read_need_int:
-                rest_data += rest_readed[:rest_read_need_int]
-                rest_readed = rest_readed[rest_read_need_int:] 
+            if len(rest_readed) >= rest_read_required:
+                # remove \r\n
+                rest_data += rest_readed[:rest_read_required-2]
+                rest_readed = rest_readed[rest_read_required:] 
+                rest_read_required = 0
                 continue
             else:
-                # '\r\n'
-                rest_read_required = rest_read_need_int - len(rest_readed) + 2
-                buf = conn.recv(rest_read_required)
-                assert buf != rest_read_required, 'DATA_NOT_ENOUGH'
-                rest_data += buf[:-2]
+                rest_read_required = rest_read_required - len(rest_readed)
+                # remove '\r\n'
+                if rest_read_required >= 2:
+                    rest_data += rest_readed 
                 rest_readed = ''
                 continue
 
     return data
+
 def http_parse(data):
     """
     GET /http://www.qq.com/ HTTP/1.1
@@ -190,7 +222,8 @@ def http_parse(data):
         url = urlparse.urljoin(WEB, url)
         pres = urlparse.urlparse(url)
     lines = []
-    lines.append(' '.join((action, pres.path, ver)))
+    # http://qq.com
+    lines.append(' '.join((action, pres.path or '/', ver)))
     headers["Host"] = pres.netloc
     if "Referer" in headers:
         headers["Referer"] = urlparse.urlparse(headers["Referer"]).path
@@ -217,13 +250,13 @@ def socket_client(url,data):
     """
     ParseResult = urlparse.urlparse(url)
     # stuck in favicon.ico
-    if ParseResult.path == 'favicon.ico':
-        #HTTP/1.1 404 Not Found
-        #Server: nginx/1.10.1
-        #Date: Thu, 22 Jun 2017 11:36:00 GMT
-        #Content-Type: text/html
-        #Connection: keep-alive        
-        data = '\r\n'.join(['HTTP/1.1 404 Not Found', 'Server: nginx/1.10.1', 'Date: Thu, 22 Jun 2017 11:36:00 GMT', 'Content-Type: text/html', 'Connection: keep-alive'])  + '\r\n\r\n'
+    #if ParseResult.path == 'favicon.ico':
+        ##HTTP/1.1 404 Not Found
+        ##Server: nginx/1.10.1
+        ##Date: Thu, 22 Jun 2017 11:36:00 GMT
+        ##Content-Type: text/html
+        ##Connection: keep-alive        
+        #data = '\r\n'.join(['HTTP/1.1 404 Not Found', 'Server: nginx/1.10.1', 'Date: Thu, 22 Jun 2017 11:36:00 GMT', 'Content-Type: text/html', 'Connection: keep-alive'])  + '\r\n\r\n'
     if ParseResult.scheme not in ["https",'http']:
         data = 'HTTP/1.1 404 Not Found\r\n'
 
