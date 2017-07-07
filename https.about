@@ -1,0 +1,113 @@
+"""
+# https://www.wosign.com/faq/faq2016-0309-04.htm
+# http://www.ruanyifeng.com/blog/2014/02/ssl_tls.html
+# https://en.wikipedia.org/wiki/Transport_Layer_Security#Protocol_details
+client      server
+-------------------
+----ClientHello-->
+# 四个字节UTCTIMESTAMP + 28B随机数（R1) # 9c:6c:eb:b6:bb:81:7c:79:aa:6f:38:24:08:9b:60:4d:07:78:ac:d8:af:0e:10:a4:7b:01:82:12
+# SID（Session ID）/session ticket
+# Server_name
+# negotiate for Cipher Suite
+# linux all support # openssl ciphers -v
+<---ServerHello---
+# 四个字节UTCTIMESTAMP + 28B随机数（R2) # 2a:3f:cf:da:81:cc:3a:bb:fc:f5:4a:e6:89:54:b2:8b:36:93:b5:03:b3:2c:30:8c:0c:47:ef:c0
+# Seesion ID
+# 遍历自己的支持LIST取出第一个匹配返回
+#  Cipher Suite: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 (0xc02f)
+#  TLS 协议
+#  ECDHE_RSA 密钥交换算法  
+#  AES_128 加密算法
+#  CBC 分组方式
+#  SHA256 摘要
+<---Certificate----------
+# Certificate/CA
+# 开始通过CA验证证书
+--client_auth[非必须]------>
+<---Server Key Exchange-----
+# http://mouxuejie.com/blog/2017-03-16/https-ssl-tls-introduction/
+# 多思考为什么，不要去记忆
+# 都是依赖非对称加密
+# https://security.stackexchange.com/questions/79482/whats-the-purpose-of-server-key-exchange-when-using-ephemeral-diffie-hellman
+# In Diffie-Hellman, the client can't compute a premaster secret on its own; both sides contribute to computing it, so the client needs to get a Diffie-Hellman public key from the server. In ephemeral Diffie-Hellman, that public key isn't in the certificate (that's what ephemeral Diffie-Hellman means). So the server has to send the client its ephemeral DH public key in a separate message so that the client can compute the premaster secret (remember, both parties need to know the premaster secret, because that's how they derive the master secret). That message is the ServerKeyExchange.
+# In RSA  #(R2==>premaster_secret(use server's pubkey to send premaster_secret)&R2==>master_secret(both caculate it to get key of RSA to encrypt next whole msg)) 
+EC Diffie-Hellman Server Params
+    Curve Type: named_curve (0x03)
+    Named Curve: secp256r1 (0x0017)
+    Pubkey Length: 65
+    Pubkey: 04:f1:87:b7:57:06:a5:36:f2:3d:c8:19:75:2d:bd:f2:2e:c9:c4:b6:c5:62:7c:3b:d6:93:34:ed:58:17:d5:10:9e:48:16:94:c2:38:82:92:f1:5b:ab:b3:45:34:27:1e:67:ae:7d:1c:5a:79:ab:d8:23:83:ac:73:79:d7:27:47:f7
+    Signature Hash Algorithm: 0x0601
+    Signature Length: 256
+    Signature: ac:3c:9e:29:f5:f0:8a:c4:48:75:78:c7:34:3b:73:ea:6d:8d:a9:0d:b9:81:ca:2f:88:e7:a5:05:b4:63:55:e4:45:fa:79:d4:35:76:a9:b9:58:e3:17:ca:96:74:e4:30:70:df:5f:4d:e3:b0:85:fd:9c:13:51:98:35:64:52:ce:10:74:9d:f8:0b:0d:64:62:de:71:81:5a:ba:ce:5e:db:6b:20:94:98:86:ac:a2:0e:4a:7f:87:4a:b0:77:44:38:9a:b9:f5:3e:b1:18:20:5b:0c:9b:02:e7:b7:b2:55:e1:da:36:4e:24:91:04:6d:c7:40:b3:6a:6e:1d:56:79:35:38:9c:2c:c3:2b:af:e3:7a:d7:a9:1f:9e:14:eb:ab:c3:67:e3:2a:0d:57:bb:90:f8:29:75:59:8e:c0:c6:3e:8a:72:2c:d6:0a:c1:6f:32:c6:15:5a:00:eb:c3:c1:95:e9:97:23:51:9a:cd:83:dd:d9:39:74:e8:28:48:9a:4f:d2:f5:c8:a6:bc:5e:af:0d:c2:1e:9e:1c:00:71:91:7d:ba:ed:0a:c7:7b:1f:0d:50:35:b3:53:b3:a8:08:9d:6d:69:83:54:6b:75:91:d7:56:b3:b7:69:af:3a:97:57:3d:2a:41:a5:09:99:cb:99:77:9d:5d:c4:e5:53:04:59:52:a4
+
+<---Server Hello Done-------
+DONE
+-- Client Key Exchange---->
+TLSv1.2 Record Layer: Handshake Protocol: Secure Sockets Layer
+    Content Type: Handshake (22)
+    Version: TLS 1.2 (0x0303)
+    Length: 70
+    Handshake Protocol: Client Key Exchange
+        Handshake Type: Client Key Exchange (16)
+        Length: 66
+        EC Diffie-Hellman Client Params 
+            Pubkey Length: 65
+            Pubkey: 04:5e:5c:50:b0:1f:0f:d8:40:e0:73:0a:ac:54:0a:5c:28:29:74:7f:6f:14:32:38:11:d7:21:87:27:8f:14:3e:91:78:96:d7:e4:5e:99:1c:a9:8e:d4:7e:74:35:b7:39:5e:af:d1:f1:0c:cd:83:34:07:1b:80:d9:f9:7a:88:56:74
+TLSv1.2 Record Layer: Change Cipher Spec Protocol: Change Cipher Spec
+    Content Type: Change Cipher Spec (20)
+    Version: TLS 1.2 (0x0303)
+    Length: 1
+    Change Cipher Spec Message
+TLSv1.2 Record Layer: Handshake Protocol: Multiple Handshake Messages
+    Content Type: Handshake (22)
+    Version: TLS 1.2 (0x0303)
+    Length: 40
+    Handshake Protocol: Hello Request
+        Handshake Type: Hello Request (0)
+        Length: 0
+    Handshake Protocol: Hello Request
+        Handshake Type: Hello Request (0)
+        Length: 0
+
+<---Send secret------------
+TLSv1.2 Record Layer: Handshake Protocol: New Session Ticket
+    Content Type: Handshake (22)
+    Version: TLS 1.2 (0x0303)
+    Length: 186
+    Handshake Protocol: New Session Ticket
+        Handshake Type: New Session Ticket (4)
+        Length: 182
+        TLS Session Ticket
+            Session Ticket Lifetime Hint: 72000
+            Session Ticket Length: 176
+            Session Ticket: f33d462a6e9226a35a9e8f314993787bac696d4ef169e4c1...
+TLSv1.2 Record Layer: Change Cipher Spec Protocol: Change Cipher Spec
+    Content Type: Change Cipher Spec (20)
+    Version: TLS 1.2 (0x0303)
+    Length: 1
+    Change Cipher Spec Message
+TLSv1.2 Record Layer: Handshake Protocol: Encrypted Handshake Message
+    Content Type: Handshake (22)
+    Version: TLS 1.2 (0x0303)
+    Length: 40
+    Handshake Protocol: Encrypted Handshake Message
+
+----send data----->
+Secure Sockets Layer
+    TLSv1.2 Record Layer: Application Data Protocol: http-over-tls
+        Content Type: Application Data (23)
+        Version: TLS 1.2 (0x0303)
+        Length: 1336
+        Encrypted Application Data: 00000000000000010daa3cb9ab882009603977a381a68760...
+
+
+# 
+
+protocol
+ssl2.0 3.0
+TLS1.0
+TLS1.1
+TLS1.2 (Latest)
+
+
+"""
