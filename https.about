@@ -27,8 +27,9 @@ client      server
 <---Server Key Exchange-----
 # http://mouxuejie.com/blog/2017-03-16/https-ssl-tls-introduction/
 # 多思考为什么，不要去记忆
-# 都是依赖非对称加密
+# 都是依赖非对称加密生成对称算法(save resource)的秘钥.
 # https://security.stackexchange.com/questions/79482/whats-the-purpose-of-server-key-exchange-when-using-ephemeral-diffie-hellman
+# https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange
 # In Diffie-Hellman, the client can't compute a premaster secret on its own; both sides contribute to computing it, so the client needs to get a Diffie-Hellman public key from the server. In ephemeral Diffie-Hellman, that public key isn't in the certificate (that's what ephemeral Diffie-Hellman means). So the server has to send the client its ephemeral DH public key in a separate message so that the client can compute the premaster secret (remember, both parties need to know the premaster secret, because that's how they derive the master secret). That message is the ServerKeyExchange.
 # In RSA  #(R2==>premaster_secret(use server's pubkey to send premaster_secret)&R2==>master_secret(both caculate it to get key of RSA to encrypt next whole msg)) 
 EC Diffie-Hellman Server Params
