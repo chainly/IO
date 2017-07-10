@@ -25,6 +25,6 @@
   - RESTful API
 
 - scan task distributable
-  - periodically task add `msg` to `queue` unless `No msg`, to ensure only on `msg`
+  - periodically task add `msg` to `queue` unless `No msg`, to ensure only one `msg`
   - several workers watch this `queue` and custom it with `ack required`
   
