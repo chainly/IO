@@ -1,5 +1,6 @@
 # IO  
 - for learning IO  
+- async and non-blocking socket, ref: https://blogs.gnome.org/markmc/2013/06/04/async-io-and-python/
 
 
 # task  
@@ -25,6 +26,7 @@
   - RESTful API
 
 - scan task distributable
-  - periodically task add `msg` to `queue` unless `No msg`, to ensure only one `msg`
-  - several workers watch this `queue` and custom it with `ack required`
+  - periodically task add `msg` to `queue` unless `No msg`, to ensure only one `msg` 
+  several workers watch this `queue` and custom it with `ack required` (server-server)
+  - one down one up (server-standby)
   
