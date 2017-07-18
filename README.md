@@ -32,3 +32,10 @@
   several workers watch this `queue` and custom it with `ack required` (server-server)
   - one down one up (server-standby)
   
+# log
+ - format: 'short desc, %detail_info: %key'
+ - debug: for traceback
+ - warn: for operating failed but not very important
+ - info: for operating succ
+ - error: for operating failed but important
+ - critical: for sytemExit, system error, logic error or unhandle error that must exit.
