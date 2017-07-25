@@ -6,6 +6,16 @@
 - more see [IO_model.md](./IO_model.md)
 - about `generator/coroutine` ,see [coroutine](./coroutine.md)
 
+# pool
+  > https://github.com/studio-ousia/gsocketpool/blob/master/gsocketpool/pool.py
+  
+  1. _pool = _inuse = []; max = max; max_timeout/retry
+  2. len, len(_pool + _inuse)
+  3. new, len()?max : conn=create_conn; _pool.append(conn), raise/wait
+  4. valid, conn.valid?
+  5. get, for conn in _pool, valid？move_to_inuse return,continue; else, new
+  6. with contextlib finally, move_to_pool |& valid
+  7. close, do_nothing/conn.close
 
 # task  
 - status to msg
