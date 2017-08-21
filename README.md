@@ -38,6 +38,7 @@
 
 - operate
   - RESTful API
+  - query add cache && cache_time in repsonse
 
 - scan task distributable
   - periodically task add `msg` to `queue` unless `No msg`, to ensure only one `msg` 
