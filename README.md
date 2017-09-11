@@ -44,7 +44,7 @@
   - periodically task add `msg` to `queue` unless `No msg`, to ensure only one `msg` 
   several workers watch this `queue` and custom it with `ack required` (server-server)
   - one down one up (server-standby)
-  - select_for_update and is_locked as table_column (preferred)
+  - `Beat`: `select_for_update` and `is_locked` as `table_column` add it to `Worker`(for `routing` and `separated`); `Worker`: do_job (preferred)
   
 # log
  - format: 'short desc, %detail_info: %key'
