@@ -6,6 +6,19 @@
 - more see [IO_model.md](./IO_model.md)
 - about `generator/coroutine` ,see [coroutine](./coroutine.md)
 
+# pid, gid, sid
+  > http://chimera.labs.oreilly.com/books/1230000000393/ch12.html#_launching_a_daemon_process_on_unix
+  > https://stackoverflow.com/questions/25701333/os-setsid-operation-not-permitted/35444688#35444688
+  > http://www.cnblogs.com/forstudy/archive/2012/04/03/2427683.html
+  1. pid = os.getpid()
+  2. ppid = os.getppid()
+  3. gid = os.getpgid(os.getpid())
+  4. sid = os.getsid(os.getpid())
+  5. gid2 = os.setpgid
+  6. sid <-- gid <--- (ppid <- pid)
+  7. os.setsid() # create new sid2 (raise if gid == pid # gid leader) and sid2.gid == pid (new sid's gid's leader)
+  
+
 # pool
   > https://github.com/studio-ousia/gsocketpool/blob/master/gsocketpool/pool.py
   
